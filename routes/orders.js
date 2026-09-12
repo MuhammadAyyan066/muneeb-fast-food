@@ -37,11 +37,13 @@ router.post('/', async (req, res) => {
 
         const newOrder = new Order({
             customerName: finalName,
-            customerPhone: finalPhone,
-            deliveryAddress: finalAddress,
+            phone: finalPhone,              // Schema key satisfy karega
+            customerPhone: finalPhone,      // Backward compatibility
+            address: finalAddress,          // Schema key satisfy karega
+            deliveryAddress: finalAddress,  // Backward compatibility
             locationCoords: {
-                lat: locationCoords?.lat || null,
-                lng: locationCoords?.lng || null
+                lat: locationCoords?.lat ? Number(locationCoords.lat) : null,
+                lng: locationCoords?.lng ? Number(locationCoords.lng) : null
             },
             items: items.map(item => ({
                 name: item.name,
@@ -55,6 +57,7 @@ router.post('/', async (req, res) => {
         const savedOrder = await newOrder.save();
         return res.status(201).json(savedOrder);
     } catch (err) {
+        console.error("Error creating order:", err);
         return res.status(400).json({ error: err.message || 'Failed to place order.' });
     }
 });
@@ -65,26 +68,50 @@ router.get('/', async (req, res) => {
         const orders = await Order.find().sort({ createdAt: -1 });
         return res.status(200).json(orders);
     } catch (err) {
+        console.error("Error fetching orders:", err);
         return res.status(500).json({ error: 'Server error retrieving orders.' });
     }
 });
 
-// 3. Update Order Status (Pending, In Delivery, Done, Cancelled)
+// 3. Update Order Status (Pending, In Delivery, Delivering, Done, Cancelled)
 router.patch('/:id/status', async (req, res) => {
     try {
-        const { status } = req.body;
-        const validStatuses = ['Pending', 'In Delivery', 'Done', 'Cancelled'];
+        let { status } = req.body;
 
-        if (!status || !validStatuses.includes(status)) {
+        if (!status) {
+            return res.status(400).json({ error: 'Status is required.' });
+        }
+
+        // Clean & normalize status string
+        status = status.trim();
+
+        // Allowed statuses list
+        const validStatuses = ['Pending', 'In Delivery', 'Delivering', 'Out for Delivery', 'Done', 'Cancelled'];
+
+        if (!validStatuses.map(s => s.toLowerCase()).includes(status.toLowerCase())) {
             return res.status(400).json({ 
-                error: `Invalid status. Allowed values: ${validStatuses.join(', ')}` 
+                error: `Invalid status. Allowed values: Pending, In Delivery, Done, Cancelled` 
             });
+        }
+
+        // Schema match fallback: Agar schema me 'Delivering' ho aur request me 'In Delivery', ya vice versa
+        const schemaStatusEnum = Order.schema.path('status')?.enumValues || validStatuses;
+        
+        let targetStatus = status;
+        const matchedEnum = schemaStatusEnum.find(e => e.toLowerCase() === status.toLowerCase());
+        
+        if (matchedEnum) {
+            targetStatus = matchedEnum;
+        } else if (status.toLowerCase() === 'in delivery' && schemaStatusEnum.includes('Delivering')) {
+            targetStatus = 'Delivering';
+        } else if (status.toLowerCase() === 'delivering' && schemaStatusEnum.includes('In Delivery')) {
+            targetStatus = 'In Delivery';
         }
 
         const updatedOrder = await Order.findByIdAndUpdate(
             req.params.id,
-            { status },
-            { new: true, runValidators: true } // Ensures schema enum validation runs
+            { status: targetStatus },
+            { new: true, runValidators: true }
         );
 
         if (!updatedOrder) {
@@ -93,6 +120,7 @@ router.patch('/:id/status', async (req, res) => {
 
         return res.status(200).json(updatedOrder);
     } catch (err) {
+        console.error("Error updating order status:", err);
         return res.status(400).json({ error: err.message || 'Could not update order status.' });
     }
 });
