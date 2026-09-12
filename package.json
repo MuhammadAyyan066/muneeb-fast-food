@@ -1,10 +1,11 @@
 {
   "name": "pizza-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend API for Muneeb Fast Food",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -12,5 +13,8 @@
     "express": "^4.19.2",
     "mongoose": "^8.3.1",
     "multer": "^2.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }
