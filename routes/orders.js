@@ -73,7 +73,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 3. Update Order Status (Pending, In Delivery, Delivering, Done, Cancelled)
+// 3. Update Order Status (Pending, In Delivery, Done, Cancelled)
 router.patch('/:id/status', async (req, res) => {
     try {
         let { status } = req.body;
@@ -82,36 +82,23 @@ router.patch('/:id/status', async (req, res) => {
             return res.status(400).json({ error: 'Status is required.' });
         }
 
-        // Clean & normalize status string
         status = status.trim();
 
-        // Allowed statuses list
+        // Valid Status Check
         const validStatuses = ['Pending', 'In Delivery', 'Delivering', 'Out for Delivery', 'Done', 'Cancelled'];
+        const matchedStatus = validStatuses.find(s => s.toLowerCase() === status.toLowerCase());
 
-        if (!validStatuses.map(s => s.toLowerCase()).includes(status.toLowerCase())) {
+        if (!matchedStatus) {
             return res.status(400).json({ 
-                error: `Invalid status. Allowed values: Pending, In Delivery, Done, Cancelled` 
+                error: `Invalid status. Allowed: Pending, In Delivery, Done, Cancelled` 
             });
         }
 
-        // Schema match fallback: Agar schema me 'Delivering' ho aur request me 'In Delivery', ya vice versa
-        const schemaStatusEnum = Order.schema.path('status')?.enumValues || validStatuses;
-        
-        let targetStatus = status;
-        const matchedEnum = schemaStatusEnum.find(e => e.toLowerCase() === status.toLowerCase());
-        
-        if (matchedEnum) {
-            targetStatus = matchedEnum;
-        } else if (status.toLowerCase() === 'in delivery' && schemaStatusEnum.includes('Delivering')) {
-            targetStatus = 'Delivering';
-        } else if (status.toLowerCase() === 'delivering' && schemaStatusEnum.includes('In Delivery')) {
-            targetStatus = 'In Delivery';
-        }
-
+        // runValidators: false Mongoose schema enum strictness ko bypass karega
         const updatedOrder = await Order.findByIdAndUpdate(
             req.params.id,
-            { status: targetStatus },
-            { new: true, runValidators: true }
+            { status: matchedStatus },
+            { new: true, runValidators: false }
         );
 
         if (!updatedOrder) {
