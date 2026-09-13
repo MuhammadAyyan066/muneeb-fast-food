@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 
-// 1. GET ALL ORDERS (For Admin Dashboard)
+// 1. GET ALL ORDERS
 router.get('/', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
@@ -13,10 +13,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. CREATE NEW ORDER (From Frontend Cart)
+// 2. CREATE ORDER
 router.post('/', async (req, res) => {
-  console.log('>>> [ORDERS API] Request received:', req.body);
-
   try {
     const {
       customerName,
@@ -33,15 +31,10 @@ router.post('/', async (req, res) => {
     const finalPhone = (customerPhone || phone || '').trim();
     const finalAddress = (deliveryAddress || address || '').trim();
 
-    if (!finalName) {
-      return res.status(400).json({ error: 'Customer name is required.' });
+    if (!finalName || !finalPhone || !finalAddress) {
+      return res.status(400).json({ error: 'Customer name, phone, and address are required.' });
     }
-    if (!finalPhone) {
-      return res.status(400).json({ error: 'Phone number is required.' });
-    }
-    if (!finalAddress) {
-      return res.status(400).json({ error: 'Address is required.' });
-    }
+
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Cart is empty.' });
     }
@@ -62,26 +55,27 @@ router.post('/', async (req, res) => {
       status: 'Pending'
     };
 
-    console.log('>>> [ORDERS API] Saving to Database...');
     const newOrder = new Order(orderData);
     const savedOrder = await newOrder.save();
-
-    console.log('>>> [ORDERS API] Order saved successfully ID:', savedOrder._id);
     return res.status(201).json(savedOrder);
-
   } catch (error) {
     console.error('>>> [ORDERS API] Error saving order:', error);
     return res.status(500).json({ error: error.message || 'Failed to place order.' });
   }
 });
 
-// 3. UPDATE ORDER STATUS HANDLER (Supports both /:id and /:id/status)
+// 3. UPDATE ORDER STATUS (PATCH /:id or /:id/status)
 const updateStatusHandler = async (req, res) => {
   try {
     const { status } = req.body;
-    const updateData = { status };
+    const allowedStatuses = ['Pending', 'Processing', 'Out for Delivery', 'Done'];
 
-    if (status === 'Completed' || status === 'Done') {
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: `Invalid status. Allowed: ${allowedStatuses.join(', ')}` });
+    }
+
+    const updateData = { status };
+    if (status === 'Done') {
       updateData.completedAt = new Date();
     }
 
@@ -95,7 +89,6 @@ const updateStatusHandler = async (req, res) => {
       return res.status(404).json({ error: 'Order not found.' });
     }
 
-    console.log(`>>> [ORDERS API] Order ${req.params.id} updated to: ${status}`);
     return res.status(200).json(updatedOrder);
   } catch (error) {
     console.error('>>> [ORDERS API] Error updating status:', error);
@@ -105,5 +98,58 @@ const updateStatusHandler = async (req, res) => {
 
 router.patch('/:id/status', updateStatusHandler);
 router.patch('/:id', updateStatusHandler);
+
+// 4. DELETE ORDER (DELETE /:id)
+router.delete('/:id', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    // Optional validation: Ensure only completed orders can be removed
+    if (order.status !== 'Done') {
+      return res.status(400).json({ error: 'Only completed ("Done") orders can be removed from dashboard.' });
+    }
+
+    await Order.findByIdAndDelete(req.params.id);
+    return res.status(200).json({ message: 'Order removed successfully.', id: req.params.id });
+  } catch (error) {
+    console.error('>>> [ORDERS API] Error deleting order:', error);
+    return res.status(500).json({ error: error.message || 'Failed to remove order.' });
+  }
+});
+router.post('/', async (req, res) => {
+  try {
+    const { customerName, phone, address, items, totalAmount } = req.body;
+
+    if (!items || !items.length) {
+      return res.status(400).json({ error: 'Cart is empty.' });
+    }
+
+    const formattedItems = items.map(item => ({
+      productId: item.productId || null,
+      name: item.name,
+      size: item.size || null,
+      price: Number(item.price),
+      quantity: Number(item.quantity) || 1
+    }));
+
+    const newOrder = new Order({
+      customerName,
+      phone,
+      address,
+      items: formattedItems,
+      totalAmount: Number(totalAmount),
+      status: 'Pending'
+    });
+
+    const savedOrder = await newOrder.save();
+    return res.status(201).json(savedOrder);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;

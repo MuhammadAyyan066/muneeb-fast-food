@@ -76,3 +76,21 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+const cron = require('node-cron');
+const Order = require('./models/Order');
+
+// Har roz raat 12:00 baje run hoga (Daily Cleanup Job)
+cron.schedule('0 0 * * *', async () => {
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const result = await Order.deleteMany({
+      status: 'Done',
+      completedAt: { $lte: sevenDaysAgo }
+    });
+    if (result.deletedCount > 0) {
+      console.log(`[CRON] Auto-purged ${result.deletedCount} orders older than 7 days.`);
+    }
+  } catch (err) {
+    console.error('[CRON] Auto-cleanup error:', err);
+  }
+});
