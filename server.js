@@ -7,7 +7,7 @@ require('dotenv').config();
 
 const app = express();
 
-// Ensure 'uploads' directory exists on startup to prevent Multer crashes
+// Ensure 'uploads' directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -22,17 +22,21 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static uploads folder for serving images
+// Static uploads folder
 app.use('/uploads', express.static(uploadsDir));
 
 // Database Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/muneeb_fast_food';
 
-mongoose.connect(MONGO_URI)
+// Disable buffering so pending queries fail immediately if connection drops
+mongoose.set('bufferCommands', false);
+
+mongoose.connect(MONGO_URI, {
+  serverSelectionTimeoutMS: 5000 // 5 seconds mein fail kare agar cluster unreachable ho
+})
   .then(() => console.log('MongoDB Connected Successfully'))
   .catch((err) => {
     console.error('Database connection error:', err.message);
-    process.exit(1);
   });
 
 // Health / Test Route
@@ -52,7 +56,7 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 
-// Global 404 Handler for Unmatched API Routes
+// Global 404 Handler
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.originalUrl} not found on this server.` });
 });
@@ -67,13 +71,8 @@ app.use((err, req, res, next) => {
 
 // Server Initialization
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// Graceful Shutdown
-process.on('SIGINT', async () => {
-  await mongoose.connection.close();
-  console.log('\nMongoDB disconnected through app termination');
-  server.close(() => process.exit(0));
-});
+module.exports = app;
