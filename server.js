@@ -3,7 +3,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const cron = require('node-cron');
 require('dotenv').config();
+
+// Models
+const Product = require('./models/Product');
+const Order = require('./models/Order');
 
 const app = express();
 
@@ -28,11 +33,10 @@ app.use('/uploads', express.static(uploadsDir));
 // Database Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/muneeb_fast_food';
 
-// Disable buffering so pending queries fail immediately if connection drops
 mongoose.set('bufferCommands', false);
 
 mongoose.connect(MONGO_URI, {
-  serverSelectionTimeoutMS: 5000 // 5 seconds mein fail kare agar cluster unreachable ho
+  serverSelectionTimeoutMS: 5000
 })
   .then(() => console.log('MongoDB Connected Successfully'))
   .catch((err) => {
@@ -47,16 +51,41 @@ app.get('/', (req, res) => {
   });
 });
 
+// Direct Menu Route (Fetches all products sorted newest first)
+app.get('/api/menu', async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 });
+    return res.status(200).json(products);
+  } catch (err) {
+    console.error('Error fetching menu:', err);
+    return res.status(500).json({ error: 'Failed to fetch menu' });
+  }
+});
+
 // Route Handlers
-const menuRoutes = require('./routes/menuRoutes');
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
 
-app.use('/api/menu', menuRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 
-// Global 404 Handler
+// Daily Cleanup Cron Job (Har roz raat 12:00 baje 7 din purane 'Done' orders delete karega)
+cron.schedule('0 0 * * *', async () => {
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const result = await Order.deleteMany({
+      status: 'Done',
+      completedAt: { $lte: sevenDaysAgo }
+    });
+    if (result.deletedCount > 0) {
+      console.log(`[CRON] Auto-purged ${result.deletedCount} orders older than 7 days.`);
+    }
+  } catch (err) {
+    console.error('[CRON] Auto-cleanup error:', err);
+  }
+});
+
+// Global 404 Handler (Tamam routes ke baad aana lazmi hai)
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.originalUrl} not found on this server.` });
 });
@@ -76,21 +105,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-const cron = require('node-cron');
-const Order = require('./models/Order');
-
-// Har roz raat 12:00 baje run hoga (Daily Cleanup Job)
-cron.schedule('0 0 * * *', async () => {
-  try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const result = await Order.deleteMany({
-      status: 'Done',
-      completedAt: { $lte: sevenDaysAgo }
-    });
-    if (result.deletedCount > 0) {
-      console.log(`[CRON] Auto-purged ${result.deletedCount} orders older than 7 days.`);
-    }
-  } catch (err) {
-    console.error('[CRON] Auto-cleanup error:', err);
-  }
-});

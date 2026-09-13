@@ -1,5 +1,18 @@
 const mongoose = require('mongoose');
 
+const SizeVariantSchema = new mongoose.Schema({
+  size: {
+    type: String,
+    enum: ['Small', 'Medium', 'Large', 'Family'],
+    required: true
+  },
+  price: {
+    type: Number,
+    required: true,
+    min: 0
+  }
+}, { _id: false });
+
 const MenuItemSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -11,11 +24,18 @@ const MenuItemSchema = new mongoose.Schema({
     required: [true, 'Category is required'],
     trim: true
   },
+  // Single price field (Burgers, Deals, Sides wagera ke liye)
   price: {
-    type: String, // Kept as string to support notations like "550/- (S)" or "350"
-    required: [true, 'Price is required'],
+    type: String,
+    default: '0/-',
     trim: true
   },
+  // Multi-size support (Pizzas ke liye)
+  hasSizes: {
+    type: Boolean,
+    default: false
+  },
+  sizes: [SizeVariantSchema],
   desc: {
     type: String,
     default: '',

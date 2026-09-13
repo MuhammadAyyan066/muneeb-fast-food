@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const MenuItem = require('../models/MenuItem');
+const MenuItem = require('../models/MenuItem'); // Make sure sizes array is added in this schema
 
 // Multer Storage Configuration
 const storage = multer.diskStorage({
@@ -24,26 +24,54 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. POST /api/admin/items (Create new item)
+// 2. POST /api/admin/items (Create new item with Multi-Size Support)
 router.post('/admin/items', upload.single('imageFile'), async (req, res) => {
   try {
-    const { name, category, price, desc, description, tag, imageUrl } = req.body;
+    const { name, category, price, desc, description, tag, imageUrl, prices } = req.body;
     let finalImage = imageUrl;
     if (req.file) {
       finalImage = `http://localhost:5000/uploads/${req.file.filename}`;
     }
 
-    if (!name || !category || !price || !finalImage) {
-      return res.status(400).json({ error: 'Name, category, price, and image are mandatory.' });
+    if (!name || !category || !finalImage) {
+      return res.status(400).json({ error: 'Name, category, and image are mandatory.' });
+    }
+
+    const isPizza = category.toLowerCase().includes('pizza');
+    let sizesArray = [];
+
+    // Parse prices object if sent via FormData string
+    let parsedPrices = {};
+    if (prices) {
+      try {
+        parsedPrices = typeof prices === 'string' ? JSON.parse(prices) : prices;
+      } catch (e) {
+        console.error("Error parsing prices:", e);
+      }
+    }
+
+    if (isPizza) {
+      if (Number(parsedPrices.small) > 0) sizesArray.push({ size: 'Small', price: Number(parsedPrices.small) });
+      if (Number(parsedPrices.medium) > 0) sizesArray.push({ size: 'Medium', price: Number(parsedPrices.medium) });
+      if (Number(parsedPrices.large) > 0) sizesArray.push({ size: 'Large', price: Number(parsedPrices.large) });
+      if (Number(parsedPrices.family) > 0) sizesArray.push({ size: 'Family', price: Number(parsedPrices.family) });
+    }
+
+    // Determine final single price format
+    let finalPrice = '0/-';
+    if (!isPizza && price) {
+      finalPrice = price.toString().includes('/-') ? price.toString().trim() : `${price.toString().trim()}/-`;
     }
 
     const newItem = new MenuItem({
       name: name.trim(),
       category: category.trim(),
-      price: price.toString().includes('/-') ? price.trim() : `${price.trim()}/-`,
+      price: finalPrice,
       desc: (desc || description || '').trim(),
       image: finalImage,
-      tag: tag || 'Special'
+      tag: tag || 'Special',
+      hasSizes: isPizza && sizesArray.length > 0,
+      sizes: sizesArray
     });
 
     const savedItem = await newItem.save();
@@ -53,15 +81,13 @@ router.post('/admin/items', upload.single('imageFile'), async (req, res) => {
   }
 });
 
-// 3. PUT /api/admin/items/:id (Edit individual item details & image)
+// 3. PUT /api/admin/items/:id (Edit item & prices)
 router.put('/admin/items/:id', upload.single('imageFile'), async (req, res) => {
   try {
-    const { name, category, price, desc, description, tag, imageUrl } = req.body;
+    const { name, category, price, desc, description, tag, imageUrl, prices } = req.body;
     const updatePayload = {};
 
     if (name) updatePayload.name = name.trim();
-    if (category) updatePayload.category = category.trim();
-    if (price) updatePayload.price = price.toString().includes('/-') ? price.trim() : `${price.trim()}/-`;
     if (desc !== undefined || description !== undefined) updatePayload.desc = (desc || description || '').trim();
     if (tag) updatePayload.tag = tag.trim();
 
@@ -69,6 +95,37 @@ router.put('/admin/items/:id', upload.single('imageFile'), async (req, res) => {
       updatePayload.image = `http://localhost:5000/uploads/${req.file.filename}`;
     } else if (imageUrl && imageUrl.trim()) {
       updatePayload.image = imageUrl.trim();
+    }
+
+    // Handle Category & Multi-size logic
+    if (category) {
+      updatePayload.category = category.trim();
+      const isPizza = updatePayload.category.toLowerCase().includes('pizza');
+
+      if (isPizza) {
+        let sizesArray = [];
+        let parsedPrices = {};
+        if (prices) {
+          try {
+            parsedPrices = typeof prices === 'string' ? JSON.parse(prices) : prices;
+          } catch (e) {}
+        }
+
+        if (Number(parsedPrices.small) > 0) sizesArray.push({ size: 'Small', price: Number(parsedPrices.small) });
+        if (Number(parsedPrices.medium) > 0) sizesArray.push({ size: 'Medium', price: Number(parsedPrices.medium) });
+        if (Number(parsedPrices.large) > 0) sizesArray.push({ size: 'Large', price: Number(parsedPrices.large) });
+        if (Number(parsedPrices.family) > 0) sizesArray.push({ size: 'Family', price: Number(parsedPrices.family) });
+
+        updatePayload.hasSizes = sizesArray.length > 0;
+        updatePayload.sizes = sizesArray;
+        updatePayload.price = '0/-'; // Reset single price for pizzas
+      } else {
+        updatePayload.hasSizes = false;
+        updatePayload.sizes = [];
+        if (price) {
+          updatePayload.price = price.toString().includes('/-') ? price.toString().trim() : `${price.toString().trim()}/-`;
+        }
+      }
     }
 
     const updated = await MenuItem.findByIdAndUpdate(
