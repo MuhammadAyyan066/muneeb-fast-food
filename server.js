@@ -19,7 +19,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// 2. CORS Configuration (Sab origins aur headers allow karein)
+// 2. CORS Configuration
 app.use(cors({
   origin: true,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
@@ -57,18 +57,47 @@ if (!fs.existsSync(uploadsDir)) {
 // Static uploads folder
 app.use('/uploads', express.static(uploadsDir));
 
-// Database Connection
+// ==========================================
+// DATABASE CONNECTION (SERVERLESS CACHING)
+// ==========================================
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/muneeb_fast_food';
 
-mongoose.set('bufferCommands', false);
+// Buffering ON rakhein taake query connection ka wait kare
+mongoose.set('bufferCommands', true);
 
-mongoose.connect(MONGO_URI, {
-  serverSelectionTimeoutMS: 5000
-})
-  .then(() => console.log('MongoDB Connected Successfully'))
-  .catch((err) => {
-    console.error('Database connection error:', err.message);
-  });
+let cachedDb = null;
+
+async function connectToDatabase() {
+  if (cachedDb && mongoose.connection.readyState === 1) {
+    return cachedDb;
+  }
+
+  if (!cachedDb) {
+    cachedDb = mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 10000,
+      bufferCommands: true
+    }).then((m) => {
+      console.log('MongoDB Connected Successfully');
+      return m;
+    }).catch((err) => {
+      cachedDb = null;
+      console.error('Database connection error:', err.message);
+      throw err;
+    });
+  }
+
+  return await cachedDb;
+}
+
+// Ensure DB connected on every incoming request
+app.use(async (req, res, next) => {
+  try {
+    await connectToDatabase();
+    next();
+  } catch (err) {
+    return res.status(500).json({ error: 'Database connection failed. Please retry.' });
+  }
+});
 
 // Health / Test Route
 app.get('/', (req, res) => {
@@ -101,7 +130,7 @@ const orderRoutes = require('./routes/orders');
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 
-// Daily Cleanup Cron Job
+// Daily Cleanup Cron Job (Local/Dedicated servers ke liye)
 cron.schedule('0 0 * * *', async () => {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -130,10 +159,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Server Initialization
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Server Initialization (Local development ke liye)
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
