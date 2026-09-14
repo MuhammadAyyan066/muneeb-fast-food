@@ -48,23 +48,174 @@ const menuItems = [
   { name: "Chicken Cheese Stuff Pizza", category: "Muneeb Special Pizzas", description: "Filled base stuffed with rich melted cheese and chicken.", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=450&auto=format&fit=crop&q=80", hasSizes: true, sizes: specialPizzaSizes },
   { name: "Zinger Cheese Alfredo Pizza", category: "Muneeb Special Pizzas", description: "Crispy zinger bites on creamy Alfredo garlic cheese sauce.", image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=450&auto=format&fit=crop&q=80", hasSizes: true, sizes: specialPizzaSizes },
 
+ // ==========================================
+  // --- MUNEEB CAFÉ DEALS ---
   // ==========================================
-  // --- DEALS ---
-  // ==========================================
-  { name: "Deal.1", category: "Deals", price: 800, description: "1 Small Pizza, 5 Hot Wings, Half Liter Drink", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=450&auto=format&fit=crop&q=80" },
-  { name: "Deal.2", category: "Deals", price: 850, description: "2 Zinger Burger, Small Fries, Half Liter Drink", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=450&auto=format&fit=crop&q=80" },
-  { name: "Deal.3", category: "Deals", price: 450, description: "1 Zinger Burger, 1 Regular Fries, 1 Regular Drink", image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=450&auto=format&fit=crop&q=80" },
-  { name: "Deal.4", category: "Deals", price: 1200, description: "1 Small Pizza, 2 Peti Burger, 1 Small Fries, Half Liter Drink", image: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=450&auto=format&fit=crop&q=80" },
-  { name: "Deal.5", category: "Deals", price: 1750, description: "1 Medium Pizza, 2 Zinger Burger, 2 Regular Fries, 1 Liter Drink", image: "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=450&auto=format&fit=crop&q=80" },
-  { name: "Deal.6", category: "Deals", price: 1850, description: "1 Medium Pizza, 12 Hot Wings, 2 Regular Fries, 1 Liter Drink", image: "https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=450&auto=format&fit=crop&q=80" },
-  { name: "Deal.7", category: "Deals", price: 2200, description: "6 Zinger Burger, 1 Liter Drink, 2 Regular Fries", image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=450&auto=format&fit=crop&q=80" },
-  { name: "Deal.8", category: "Deals", price: 2250, description: "1 Large Pizza, 10 Nuggets, 1 Medium Fries, 1.5 Liter Drink", image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=450&auto=format&fit=crop&q=80" },
-  { name: "Deal.9", category: "Deals", price: 1600, description: "5 Peti Burger, 2 Regular Fries, 1.5 Liter Drink", image: "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=450&auto=format&fit=crop&q=80" },
-  { name: "Deal.10", category: "Deals", price: 3200, description: "1 Large Pizza, 2 Zinger Burger, 10 Hot Wings, Mayo Garlic Fries, 1.5 Liter Drink", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=450&auto=format&fit=crop&q=80" },
-  { name: "Birthday Deal", category: "Deals", price: 6500, description: "2 Family Pizza, 5 Grill Burger, 20 Grill Wings, 1 Pound Cake, 4 Fries, 2 Drink 1.5 Ltr", image: "https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=450&auto=format&fit=crop&q=80" },
-  { name: "Limousine Pizza", category: "Deals", price: 3500, description: "Giant Limousine Pizza + 2 Ltr Drink", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=450&auto=format&fit=crop&q=80" },
-  { name: "Muneeb Special Plater", category: "Deals", price: 3000, description: "10 Nuggets, 10 Hot wings, 10 Grill wings, 1 Large Pizza, 1 Drink 1.5 Ltr", image: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=450&auto=format&fit=crop&q=80" },
-
+  {
+    name: "Deal.1",
+    category: "Deals",
+    price: 800,
+    description: "1 Small Pizza, 5 Hot Wings, Half Liter Drink",
+    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.2",
+    category: "Deals",
+    price: 850,
+    description: "2 Zinger Burger, Small Fries, Half Liter Drink",
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.3",
+    category: "Deals",
+    price: 450,
+    description: "1 Zinger Burger, 1 Regular Fries, 1 Regular Drink",
+    image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.4",
+    category: "Deals",
+    price: 1200,
+    description: "1 Small Pizza, 2 Peti Burger, 1 Small Fries, Half Liter Drink",
+    image: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.5",
+    category: "Deals",
+    price: 1750,
+    description: "1 Medium Pizza, 2 Zinger Burger, 2 Regular Fries, 1 Liter Drink",
+    image: "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.6",
+    category: "Deals",
+    price: 1850,
+    description: "1 Medium Pizza, 12 Hot Wings, 2 Regular Fries, 1 Liter Drink",
+    image: "https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.7",
+    category: "Deals",
+    price: 2200,
+    description: "6 Zinger Burger, 1 Liter Drink, 2 Regular Fries",
+    image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.8",
+    category: "Deals",
+    price: 2250,
+    description: "1 Large Pizza, 10 Nuggets, 1 Medium Fries, 1.5 Liter Drink",
+    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.9",
+    category: "Deals",
+    price: 1600,
+    description: "5 Peti Burger, 2 Regular Fries, 1.5 Liter Drink",
+    image: "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.10",
+    category: "Deals",
+    price: 3200,
+    description: "1 Large Pizza, 2 Zinger Burger, 10 Hot Wings, Mayo Garlic Fries Large, 1.5 Liter Drink",
+    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.11",
+    category: "Deals",
+    price: 2900,
+    description: "2 Medium Pizza, 2 Zinger Burger, 5 Hot Wings, 2 Regular Fries, 1.5 Liter Drink",
+    image: "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.16",
+    category: "Deals",
+    price: 550,
+    description: "1 Malai Boti Shawarma, 5p Nuggets, 1 Regular Drink",
+    image: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.17",
+    category: "Deals",
+    price: 750,
+    description: "2 Special Peti Burger, 2 Regular Drink, 2 Regular Fries",
+    image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.18",
+    category: "Deals",
+    price: 600,
+    description: "14 Nuggets, 1 Regular Drink",
+    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.19",
+    category: "Deals",
+    price: 700,
+    description: "2 Tikka Pratha, 2 Regular Fries, 2 Regular Drink",
+    image: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.20",
+    category: "Deals",
+    price: 750,
+    description: "2 Special Peti Burger, 2 Regular Drink, 2 Regular Fries",
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Deal.21",
+    category: "Deals",
+    price: 1000,
+    description: "20p Grill Wings, 1 Half Ltr Drink",
+    image: "https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Birthday Deal",
+    category: "Deals",
+    price: 6500,
+    description: "2 Family Pizza, 5 Grill Burger, 20 Grill Wings, 1 Pound Cake, 4 Regular Fries, 2 Drink 1.5 Ltr",
+    image: "https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Limousine Pizza",
+    category: "Deals",
+    price: 3500,
+    description: "Giant Limousine Pizza + 2 Ltr Drink",
+    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  },
+  {
+    name: "Muneeb Special Plater",
+    category: "Deals",
+    price: 3000,
+    description: "10 Nuggets, 10 Hot wings, 10 Grill wings, 1 Large Pizza, 1 Drink 1.5 Ltr",
+    image: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=450&auto=format&fit=crop&q=80",
+    hasSizes: false
+  }, // --- PIZZA DEALS (12 - 15) ---
+  { name: "Deal No 12", category: "Deals", price: 1100, time: "20 min", rating: "4.9 (88)", desc: "2 Small Pizza, Half Liter Drink (Flavours: Chicken Tikah, Creamy Tikah, Chicken Fajita, Hot & Spice)", tag: "Deal", image: "images/pizza pic.jpg" },
+  { name: "Deal No 13", category: "Deals", price: 2200, time: "22 min", rating: "4.9 (104)", desc: "2 Medium Pizza, 1 Liter Drink (Flavours: Chicken Tikah, Creamy Tikah, Chicken Fajita, Hot & Spice)", tag: "Deal", image: "images/deals.jpg" },
+  { name: "Deal No 14", category: "Deals", price: 3000, time: "25 min", rating: "5.0 (95)", desc: "2 Large Pizza, 1.5 Liter Drink (Flavours: Chicken Tikah, Creamy Tikah, Chicken Fajita, Hot & Spice)", tag: "Special", image: "images/pizza pic.jpg" },
+  { name: "Deal No 15", category: "Deals", price: 3400, time: "28 min", rating: "5.0 (130)", desc: "2 Family Pizza, 1.5 Liter Drink (Flavours: Chicken Tikah, Creamy Tikah, Chicken Fajita, Hot & Spice)", tag: "Family Deal", image: "images/deals.jpg" },
+ 
   // ==========================================
   // --- BURGERS ---
   // ==========================================

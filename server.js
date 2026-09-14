@@ -15,50 +15,36 @@ const Order = require('./models/Order');
 const app = express();
 
 // 1. Security Headers (Helmet)
-// crossOriginResourcePolicy allow karta hai taake frontend uploads folder se images load kar sake
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// 2. CORS Configuration
-// Development me localhost allow karega, production me aapka client URL ya *
-const allowedOrigins = process.env.CLIENT_URL 
-  ? process.env.CLIENT_URL.split(',') 
-  : ['http://localhost:5173', 'http://localhost:3000'];
-
+// 2. CORS Configuration (Sab origins aur headers allow karein)
 app.use(cors({
-  origin: (origin, callback) => {
-    // Postman ya direct server-to-server requests allow karne ke liye !origin check
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS blocked this origin'));
-    }
-  },
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Bypass-Tunnel-Reminder'],
   credentials: true
 }));
 
-// 3. Rate Limiting (DDoS aur abuse protection)
+// 3. Rate Limiting
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // Max 200 requests per IP per window
+  windowMs: 15 * 60 * 1000,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Bohat zyada requests! 15 minutes baad dobara koshish karein.' }
 });
 app.use('/api', generalLimiter);
 
-// Auth routes ke liye strict rate limit (Brute-force protection)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20, // 15 minute me max 20 login/register attempts
+  max: 20,
   message: { error: 'Bohat zyada login attempts. Thori dair baad dobara koshish karein.' }
 });
 app.use('/api/auth', authLimiter);
 
-// 4. Request Parsers (Payload limit)
+// 4. Request Parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -92,10 +78,15 @@ app.get('/', (req, res) => {
   });
 });
 
-// Direct Menu Route (Fetches all products sorted newest first)
+// Menu Route (Category filter support ke sath)
 app.get('/api/menu', async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const filter = {};
+    if (req.query.category && req.query.category.toLowerCase() !== 'all') {
+      filter.category = new RegExp(`^${req.query.category}$`, 'i');
+    }
+
+    const products = await Product.find(filter).sort({ createdAt: -1 });
     return res.status(200).json(products);
   } catch (err) {
     console.error('Error fetching menu:', err);
@@ -110,7 +101,7 @@ const orderRoutes = require('./routes/orders');
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 
-// Daily Cleanup Cron Job (Har roz raat 12:00 baje 7 din purane 'Done' orders delete karega)
+// Daily Cleanup Cron Job
 cron.schedule('0 0 * * *', async () => {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
