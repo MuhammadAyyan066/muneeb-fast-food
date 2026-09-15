@@ -92,4 +92,18 @@ const updateOrderHandler = async (req, res) => {
 router.patch('/:id', updateOrderHandler);
 router.put('/:id', updateOrderHandler);
 
+// DELETE order by ID (For Remove button)
+router.delete('/:id', async (req, res) => {
+  try {
+    const deletedOrder = await Order.findByIdAndDelete(req.params.id);
+    if (!deletedOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    return res.status(200).json({ message: 'Order removed successfully', id: req.params.id });
+  } catch (err) {
+    console.error('Error deleting order:', err);
+    return res.status(500).json({ error: 'Failed to delete order' });
+  }
+});
+
 module.exports = router;
