@@ -1,3 +1,23 @@
+const express = require('express');
+const router = express.Router();
+const Product = require('../models/Product');
+
+// 1. GET ALL PRODUCTS
+router.get('/', async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.category && req.query.category.toLowerCase() !== 'all') {
+      filter.category = new RegExp(`^${req.query.category}$`, 'i');
+    }
+    const products = await Product.find(filter).sort({ createdAt: -1 });
+    return res.status(200).json(products);
+  } catch (err) {
+    console.error('Error fetching products:', err);
+    return res.status(500).json({ error: err.message || 'Failed to fetch products.' });
+  }
+});
+
+// 2. CREATE PRODUCT
 router.post('/', async (req, res) => {
   try {
     const { name, category, description, image, price, prices, sizes } = req.body;
@@ -48,3 +68,19 @@ router.post('/', async (req, res) => {
     return res.status(500).json({ error: err.message || 'Failed to save product.' });
   }
 });
+
+// 3. DELETE PRODUCT
+router.delete('/:id', async (req, res) => {
+  try {
+    const deleted = await Product.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Product not found.' });
+    }
+    return res.status(200).json({ message: 'Product deleted successfully', id: req.params.id });
+  } catch (err) {
+    console.error('Error deleting product:', err);
+    return res.status(500).json({ error: err.message || 'Failed to delete product.' });
+  }
+});
+
+module.exports = router;
