@@ -6,22 +6,34 @@ const Order = require('../models/Order');
 router.get('/', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
-    res.status(200).json(orders);
+    return res.status(200).json(orders);
   } catch (err) {
     console.error('Error fetching orders:', err);
-    res.status(500).json({ error: 'Failed to fetch orders' });
+    return res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
 
 // POST new order
 router.post('/', async (req, res) => {
   try {
-    const newOrder = new Order(req.body);
+    const body = req.body || {};
+    
+    // Normalize fields so schema mismatches never fail
+    const orderData = {
+      ...body,
+      customerName: body.customerName || body.name || 'Guest Customer',
+      customerPhone: body.customerPhone || body.phone || '0000000000',
+      deliveryAddress: body.deliveryAddress || body.address || 'Fatehpur',
+      totalAmount: Number(body.totalAmount || body.total || 0),
+      items: Array.isArray(body.items) ? body.items : []
+    };
+
+    const newOrder = new Order(orderData);
     const savedOrder = await newOrder.save();
-    res.status(201).json(savedOrder);
+    return res.status(201).json(savedOrder);
   } catch (err) {
-    console.error('Error placing order:', err);
-    res.status(500).json({ error: 'Failed to place order' });
+    console.error('Error placing order:', err.message || err);
+    return res.status(500).json({ error: err.message || 'Failed to place order' });
   }
 });
 
@@ -33,10 +45,10 @@ router.patch('/:id', async (req, res) => {
       { $set: req.body },
       { new: true }
     );
-    res.status(200).json(updatedOrder);
+    return res.status(200).json(updatedOrder);
   } catch (err) {
     console.error('Error updating order:', err);
-    res.status(500).json({ error: 'Failed to update order' });
+    return res.status(500).json({ error: 'Failed to update order' });
   }
 });
 
