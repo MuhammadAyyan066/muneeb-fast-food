@@ -5,7 +5,6 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
-const cron = require('node-cron');
 require('dotenv').config();
 
 const Product = require('./models/Product');
@@ -57,23 +56,28 @@ app.use('/api/auth', authLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Safe local uploads directory handling for non-serverless environments
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (e) {
+  // Read-only filesystem par silent ignore
 }
 app.use('/uploads', express.static(uploadsDir));
 
 // Database Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/muneeb_fast_food';
-mongoose.set('bufferCommands', true);
+mongoose.set('bufferCommands', false);
 
 let cachedDb = null;
 async function connectToDatabase() {
   if (cachedDb && mongoose.connection.readyState === 1) return cachedDb;
   if (!cachedDb) {
     cachedDb = mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 10000,
-      bufferCommands: true
+      serverSelectionTimeoutMS: 5000,
+      bufferCommands: false
     }).then((m) => {
       console.log('MongoDB Connected Successfully');
       return m;
@@ -91,7 +95,7 @@ app.use(async (req, res, next) => {
     await connectToDatabase();
     next();
   } catch (err) {
-    return res.status(500).json({ error: 'Database connection failed. Please retry.' });
+    return res.status(500).json({ error: 'Database connection failed. Check MONGO_URI.' });
   }
 });
 
@@ -119,15 +123,6 @@ const productRoutes = require('./routes/products');
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
-
-cron.schedule('0 0 * * *', async () => {
-  try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    await Order.deleteMany({ status: 'Done', completedAt: { $lte: sevenDaysAgo } });
-  } catch (err) {
-    console.error('[CRON] Auto-cleanup error:', err);
-  }
-});
 
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.originalUrl} not found on this server.` });
