@@ -14,20 +14,30 @@ const Order = require('./models/Order');
 
 const app = express();
 
-// 1. Security Headers (Helmet)
+// 1. Explicit Global CORS Middleware (Preflight aur Cross-Origin Access ke liye)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Bypass-Tunnel-Reminder");
+  
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
+
+// 2. Security Headers (Helmet)
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// 2. CORS Configuration
+// 3. CORS Package Support
 app.use(cors({
-  origin: true,
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Bypass-Tunnel-Reminder'],
-  credentials: true
+  origin: '*',
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS']
 }));
 
-// 3. Rate Limiting
+// 4. Rate Limiting
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
@@ -44,7 +54,7 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth', authLimiter);
 
-// 4. Request Parsers
+// 5. Request Parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -106,7 +116,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Menu Route (Direct fallback support)
+// Menu Route
 app.get('/api/menu', async (req, res) => {
   try {
     const filter = {};
@@ -125,11 +135,11 @@ app.get('/api/menu', async (req, res) => {
 // Route Handlers
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
-const productRoutes = require('./routes/products'); // Products route import
+const productRoutes = require('./routes/products');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/products', productRoutes); // Registered /api/products endpoint
+app.use('/api/products', productRoutes);
 
 // Daily Cleanup Cron Job
 cron.schedule('0 0 * * *', async () => {
