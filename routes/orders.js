@@ -17,8 +17,6 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const body = req.body || {};
-    
-    // Normalize fields so schema mismatches never fail
     const orderData = {
       ...body,
       customerName: body.customerName || body.name || 'Guest Customer',
@@ -37,19 +35,61 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH / PUT order status
-router.patch('/:id', async (req, res) => {
+// Handle /:id/status (PUT & PATCH)
+const updateStatusHandler = async (req, res) => {
   try {
+    const { status } = req.body;
+    const updatePayload = { status };
+    if (status === 'Done') {
+      updatePayload.completedAt = new Date();
+    }
+
     const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      { $set: updatePayload },
       { new: true }
     );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    return res.status(200).json(updatedOrder);
+  } catch (err) {
+    console.error('Error updating status:', err);
+    return res.status(500).json({ error: 'Failed to update status' });
+  }
+};
+
+router.patch('/:id/status', updateStatusHandler);
+router.put('/:id/status', updateStatusHandler);
+
+// Handle direct /:id (PUT & PATCH)
+const updateOrderHandler = async (req, res) => {
+  try {
+    const updatePayload = { ...req.body };
+    if (req.body.status === 'Done') {
+      updatePayload.completedAt = new Date();
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      { $set: updatePayload },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
     return res.status(200).json(updatedOrder);
   } catch (err) {
     console.error('Error updating order:', err);
     return res.status(500).json({ error: 'Failed to update order' });
   }
-});
+};
+
+router.patch('/:id', updateOrderHandler);
+router.put('/:id', updateOrderHandler);
 
 module.exports = router;
