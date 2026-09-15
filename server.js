@@ -62,7 +62,6 @@ app.use('/uploads', express.static(uploadsDir));
 // ==========================================
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/muneeb_fast_food';
 
-// Buffering ON rakhein taake query connection ka wait kare
 mongoose.set('bufferCommands', true);
 
 let cachedDb = null;
@@ -107,7 +106,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Menu Route (Category filter support ke sath)
+// Menu Route (Direct fallback support)
 app.get('/api/menu', async (req, res) => {
   try {
     const filter = {};
@@ -126,11 +125,13 @@ app.get('/api/menu', async (req, res) => {
 // Route Handlers
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
+const productRoutes = require('./routes/products'); // Products route import
 
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/products', productRoutes); // Registered /api/products endpoint
 
-// Daily Cleanup Cron Job (Local/Dedicated servers ke liye)
+// Daily Cleanup Cron Job
 cron.schedule('0 0 * * *', async () => {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -159,7 +160,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Server Initialization (Local development ke liye)
+// Server Initialization
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
